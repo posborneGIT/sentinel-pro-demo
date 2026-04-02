@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sentinel Pro — Industrial AI Diagnostics Platform</title>
+<meta name="description" content="AI-powered industrial machine diagnostics platform by EPIConsulting. Multi-vendor LLM integration, semantic memory, OPC bridge, and professional document generation.">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --navy:#1e3a5f;--navy-light:#2a4f7a;--navy-dark:#152d4a;
+  --steel:#4a90b8;--steel-light:#62b4d5;
+  --accent:#e8762b;--accent-light:#f2a45b;
+  --bg:#f1f5f9;--card:#ffffff;--border:#e2e8f0;
+  --text:#1e293b;--text-sec:#64748b;--text-light:#94a3b8;
+  --green:#22c55e;--yellow:#eab308;--red:#ef4444;--cyan:#06b6d4;
+  --sidebar-w:240px;--topbar-h:56px;
+  --shadow:0 1px 3px rgba(0,0,0,.1),0 1px 2px rgba(0,0,0,.06);
+  --shadow-lg:0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -4px rgba(0,0,0,.1);
+}
+body{font-family:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;overflow:hidden;height:100vh}
+a{color:var(--steel);text-decoration:none}
+button{cursor:pointer;font-family:inherit;border:none;background:none;font-size:inherit}
+input,select,textarea{font-family:inherit;font-size:inherit}
+code,.mono{font-family:'JetBrains Mono','Fira Code','Consolas',monospace}
+
+/* LOGIN */
+#login-overlay{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--navy-dark) 0%,var(--navy) 50%,var(--navy-light) 100%);transition:opacity .5s,visibility .5s}
+#login-overlay.hidden{opacity:0;visibility:hidden;pointer-events:none}
+.login-box{background:var(--card);border-radius:16px;padding:48px 40px;width:400px;max-width:90vw;box-shadow:var(--shadow-lg);text-align:center}
+.login-logo{font-size:28px;font-weight:800;color:var(--navy);margin-bottom:4px;letter-spacing:-.5px}
+.login-sub{color:var(--text-sec);font-size:13px;margin-bottom:32px}
+.login-field{display:block;width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;margin-bottom:14px;background:var(--bg);outline:none;transition:border .2s}
+.login-field:focus{border-color:var(--steel)}
+.login-btn{display:block;width:100%;padding:12px;background:var(--navy);color:#fff;border-radius:8px;font-weight:600;font-size:15px;transition:background .2s}
+.login-btn:hover{background:var(--navy-light)}
+.login-hint{margin-top:20px;font-size:11px;color:var(--text-light)}
+.login-badge{display:inline-block;background:var(--accent);color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;margin-left:6px;vertical-align:middle;letter-spacing:.5px}
+
+/* LAYOUT */
+#app{display:flex;height:100vh;opacity:0;transition:opacity .4s}
+#app.visible{opacity:1}
+#sidebar{width:var(--sidebar-w);background:var(--navy);color:#fff;display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;z-index:100}
+.sb-brand{padding:20px 18px 16px;border-bottom:1px solid rgba(255,255,255,.1)}
+.sb-brand-name{font-size:20px;font-weight:800;letter-spacing:-.3px}
+.sb-brand-tag{font-size:10px;color:rgba(255,255,255,.5);letter-spacing:1px;text-transform:uppercase;margin-top:2px}
+.sb-machine-sel{margin:12px 14px;padding:8px 10px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#fff;font-size:12px;width:calc(100% - 28px);outline:none}
+.sb-machine-sel option{color:var(--text);background:var(--card)}
+.sb-nav{flex:1;padding:8px 10px}
+.sb-section{font-size:10px;color:rgba(255,255,255,.35);letter-spacing:1.2px;text-transform:uppercase;padding:14px 8px 6px;font-weight:600}
+.sb-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;color:rgba(255,255,255,.7);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;position:relative}
+.sb-item:hover{background:rgba(255,255,255,.08);color:#fff}
+.sb-item.active{background:rgba(255,255,255,.15);color:#fff}
+.sb-item.active::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:20px;background:var(--accent);border-radius:0 3px 3px 0}
+.sb-icon{width:18px;height:18px;opacity:.7;flex-shrink:0}
+.sb-item.active .sb-icon{opacity:1}
+.sb-badge{margin-left:auto;background:var(--accent);color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:99px}
+.sb-footer{padding:16px 18px;border-top:1px solid rgba(255,255,255,.1);font-size:11px;color:rgba(255,255,255,.35)}
+.sb-footer span{color:rgba(255,255,255,.55)}
+
+/* MAIN */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#topbar{height:var(--topbar-h);background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;flex-shrink:0}
+.tb-title{font-size:18px;font-weight:700;color:var(--navy)}
+.tb-spacer{flex:1}
+.tb-machine{font-size:12px;color:var(--text-sec);background:var(--bg);padding:6px 12px;border-radius:6px;display:flex;align-items:center;gap:6px}
+.tb-dot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block}
+.tb-user{display:flex;align-items:center;gap:8px}
+.tb-avatar{width:32px;height:32px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.tb-name{font-size:13px;font-weight:600}
+.tb-role{font-size:10px;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px}
+#content{flex:1;overflow-y:auto;padding:24px}
+
+/* SCREENS */
+.screen{display:none}
+.screen.active{display:block}
+
+/* CARDS & COMPONENTS */
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;box-shadow:var(--shadow)}
+.card-sm{padding:16px}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 20px;box-shadow:var(--shadow)}
+.stat-val{font-size:28px;font-weight:800;color:var(--navy)}
+.stat-label{font-size:12px;color:var(--text-sec);margin-top:2px}
+.stat-icon{float:right;width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.stat-icon.navy{background:rgba(30,58,95,.1);color:var(--navy)}
+.stat-icon.steel{background:rgba(74,144,184,.1);color:var(--steel)}
+.stat-icon.accent{background:rgba(232,118,43,.1);color:var(--accent)}
+.stat-icon.green{background:rgba(34,197,94,.1);color:var(--green)}
+
+.section-title{font-size:16px;font-weight:700;color:var(--navy);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.section-title .count{font-size:12px;color:var(--text-light);font-weight:500}
+
+/* MACHINE GRID */
+.machine-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+.m-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;box-shadow:var(--shadow);cursor:pointer;transition:all .2s}
+.m-card:hover{border-color:var(--steel);box-shadow:var(--shadow-lg);transform:translateY(-2px)}
+.m-header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.m-icon{width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,var(--navy),var(--navy-light));color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800}
+.m-name{font-weight:700;font-size:14px}
+.m-type{font-size:11px;color:var(--text-sec)}
+.m-status{display:flex;align-items:center;gap:5px;font-size:11px;margin-bottom:10px}
+.m-status-dot{width:6px;height:6px;border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.m-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px;color:var(--text-sec)}
+.m-stat-val{font-weight:700;color:var(--text);font-size:13px}
+.m-progress{height:4px;background:var(--bg);border-radius:2px;overflow:hidden;margin-top:4px}
+.m-progress-bar{height:100%;border-radius:2px;transition:width 1s ease}
+
+/* ACTIVITY FEED */
+.activity-wrap{display:grid;grid-template-columns:2fr 1fr;gap:20px}
+.feed-item{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.feed-item:last-child{border-bottom:none}
+.feed-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0}
+.feed-text{font-size:13px}.feed-time{font-size:11px;color:var(--text-light);margin-top:2px}
+.sys-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
+.sys-item:last-child{border-bottom:none}
+.sys-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* DOCUMENTS TABLE */
+.doc-filters{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.doc-search{padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg);width:260px;outline:none}
+.doc-search:focus{border-color:var(--steel)}
+.filter-chip{padding:5px 12px;border:1px solid var(--border);border-radius:99px;font-size:12px;color:var(--text-sec);cursor:pointer;transition:all .15s;background:var(--card)}
+.filter-chip:hover,.filter-chip.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.doc-table{width:100%;border-collapse:separate;border-spacing:0}
+.doc-table th{text-align:left;padding:10px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-light);border-bottom:2px solid var(--border);font-weight:600}
+.doc-table td{padding:10px 14px;border-bottom:1px solid var(--border);font-size:13px}
+.doc-table tr:hover td{background:rgba(74,144,184,.03)}
+.doc-type{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;letter-spacing:.3px}
+.doc-type.plc{background:#dbeafe;color:#1d4ed8}.doc-type.manual{background:#fef3c7;color:#92400e}
+.doc-type.schematic{background:#d1fae5;color:#065f46}.doc-type.drive{background:#ede9fe;color:#5b21b6}
+.doc-type.hmi{background:#fce7f3;color:#9d174d}.doc-type.tag{background:#e0e7ff;color:#3730a3}
+.idx-badge{padding:2px 8px;border-radius:99px;font-size:10px;font-weight:600}
+.idx-badge.yes{background:#dcfce7;color:#166534}.idx-badge.no{background:#fee2e2;color:#991b1b}
+
+/* DIAGNOSTICS */
+.diag-layout{display:grid;grid-template-columns:1fr 380px;gap:0;height:calc(100vh - var(--topbar-h) - 48px);margin:-24px}
+.chat-panel{display:flex;flex-direction:column;border-right:1px solid var(--border)}
+.chat-header{padding:14px 20px;border-bottom:1px solid var(--border);background:var(--card);display:flex;align-items:center;gap:12px}
+.chat-header select{padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--bg)}
+.chat-messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px;background:var(--bg)}
+.msg{max-width:85%;display:flex;flex-direction:column;gap:4px}
+.msg.user{align-self:flex-end}.msg.ai{align-self:flex-start}
+.msg-bubble{padding:12px 16px;border-radius:12px;font-size:13px;line-height:1.6}
+.msg.user .msg-bubble{background:var(--navy);color:#fff;border-bottom-right-radius:4px}
+.msg.ai .msg-bubble{background:var(--card);border:1px solid var(--border);border-bottom-left-radius:4px;box-shadow:var(--shadow)}
+.msg-meta{font-size:10px;color:var(--text-light);display:flex;gap:8px;align-items:center}
+.msg-source{font-size:11px;color:var(--steel);background:rgba(74,144,184,.08);padding:4px 10px;border-radius:6px;margin-top:4px;display:inline-block}
+.chat-input{padding:16px 20px;background:var(--card);border-top:1px solid var(--border);display:flex;gap:10px;align-items:center}
+.chat-input input{flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:8px;outline:none;background:var(--bg)}
+.chat-input input:focus{border-color:var(--steel)}
+.chat-send{padding:10px 20px;background:var(--navy);color:#fff;border-radius:8px;font-weight:600;font-size:13px;transition:background .2s}
+.chat-send:hover{background:var(--navy-light)}
+.chat-typing{display:flex;gap:4px;padding:8px 16px}
+.chat-typing span{width:6px;height:6px;border-radius:50%;background:var(--text-light);animation:typing 1.4s infinite}
+.chat-typing span:nth-child(2){animation-delay:.2s}
+.chat-typing span:nth-child(3){animation-delay:.4s}
+@keyframes typing{0%,60%,100%{transform:translateY(0);opacity:.3}30%{transform:translateY(-6px);opacity:1}}
+
+/* OPC PANEL */
+.opc-panel{display:flex;flex-direction:column;background:var(--card)}
+.opc-header{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.opc-header-title{font-weight:700;font-size:14px;color:var(--navy)}
+.opc-status{margin-left:auto;font-size:11px;display:flex;align-items:center;gap:5px}
+.opc-content{flex:1;overflow-y:auto;padding:12px}
+.opc-section{margin-bottom:16px}
+.opc-section-title{font-size:11px;font-weight:600;color:var(--text-sec);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.opc-tag{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border:1px solid var(--border);border-radius:6px;margin-bottom:6px;font-size:12px;background:var(--bg)}
+.opc-tag-name{font-weight:600;color:var(--navy)}
+.opc-tag-val{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px}
+.opc-tag-val.high{color:var(--red)}.opc-tag-val.warn{color:var(--yellow)}.opc-tag-val.ok{color:var(--green)}
+.opc-chart{width:100%;height:100px;background:var(--bg);border:1px solid var(--border);border-radius:6px;margin-top:8px}
+
+/* MEMORY DASHBOARD */
+.mem-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.mem-overview{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}
+.mem-ring-wrap{text-align:center}
+.mem-ring{width:100px;height:100px;margin:0 auto 8px}
+.mem-ring-label{font-size:12px;color:var(--text-sec)}
+.mem-ring-val{font-size:24px;font-weight:800;color:var(--navy)}
+.mem-machine{border-left:3px solid var(--steel);padding-left:14px;margin-bottom:14px}
+.mem-machine-name{font-weight:700;font-size:13px;margin-bottom:4px}
+.mem-machine-stats{display:flex;gap:16px;font-size:11px;color:var(--text-sec)}
+.health-item{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
+.health-item:last-child{border-bottom:none}
+.health-badge{padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600}
+.health-badge.ok{background:#dcfce7;color:#166534}.health-badge.warn{background:#fef9c3;color:#854d0e}
+.health-badge.err{background:#fee2e2;color:#991b1b}
+
+/* SETTINGS */
+.provider-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.prov-card{border-radius:12px;border:1px solid var(--border);padding:20px;background:var(--card);box-shadow:var(--shadow);position:relative}
+.prov-card.default{border-color:var(--green);box-shadow:0 0 0 1px var(--green),var(--shadow)}
+.prov-default{position:absolute;top:12px;right:12px;background:var(--green);color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:99px;letter-spacing:.5px}
+.prov-logo{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;margin-bottom:12px}
+.prov-name{font-weight:700;font-size:15px;margin-bottom:2px}
+.prov-desc{font-size:12px;color:var(--text-sec);margin-bottom:14px}
+.prov-field{position:relative;margin-bottom:10px}
+.prov-field label{font-size:11px;color:var(--text-sec);display:block;margin-bottom:4px;font-weight:500}
+.prov-field input{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--bg);font-family:'JetBrains Mono',monospace}
+.prov-status{display:flex;align-items:center;gap:6px;font-size:12px;margin-top:8px}
+.prov-actions{display:flex;gap:8px;margin-top:12px}
+.btn{padding:7px 16px;border-radius:6px;font-size:12px;font-weight:600;transition:all .15s}
+.btn-primary{background:var(--navy);color:#fff}.btn-primary:hover{background:var(--navy-light)}
+.btn-secondary{background:var(--bg);color:var(--text);border:1px solid var(--border)}.btn-secondary:hover{background:var(--border)}
+.btn-accent{background:var(--accent);color:#fff}.btn-accent:hover{background:var(--accent-light)}
+
+/* REPORTS */
+.rpt-types{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px}
+.rpt-type{border:1px solid var(--border);border-radius:10px;padding:16px;background:var(--card);cursor:pointer;transition:all .2s;text-align:center}
+.rpt-type:hover{border-color:var(--steel);box-shadow:var(--shadow)}
+.rpt-type.selected{border-color:var(--navy);background:rgba(30,58,95,.03);box-shadow:0 0 0 1px var(--navy)}
+.rpt-type-icon{font-size:28px;margin-bottom:8px}
+.rpt-type-name{font-weight:700;font-size:13px;margin-bottom:2px}
+.rpt-type-desc{font-size:11px;color:var(--text-sec)}
+
+/* POPUP/MODAL */
+#overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:500;display:none;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
+#overlay.show{display:flex}
+#popup{background:var(--card);border-radius:16px;padding:28px;width:480px;max-width:90vw;max-height:80vh;overflow-y:auto;box-shadow:var(--shadow-lg)}
+.popup-title{font-size:18px;font-weight:700;color:var(--navy);margin-bottom:16px;display:flex;align-items:center;gap:10px}
+.popup-close{margin-left:auto;width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;color:var(--text-sec)}
+.popup-close:hover{background:var(--bg)}
+
+/* UTILITY */
+.flex{display:flex}.items-center{align-items:center}.gap-2{gap:8px}.gap-3{gap:12px}.gap-4{gap:16px}
+.justify-between{justify-content:space-between}.flex-1{flex:1}
+.text-sm{font-size:13px}.text-xs{font-size:11px}.text-sec{color:var(--text-sec)}.text-light{color:var(--text-light)}
+.font-bold{font-weight:700}.font-semi{font-weight:600}
+.mb-2{margin-bottom:8px}.mb-4{margin-bottom:16px}.mb-6{margin-bottom:24px}
+.mt-2{margin-top:8px}.mt-4{margin-top:16px}
+.w-full{width:100%}
+.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600}
+.demo-banner{background:linear-gradient(90deg,var(--accent),#d35400);color:#fff;text-align:center;padding:6px;font-size:11px;font-weight:600;letter-spacing:.5px}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}::-webkit-scrollbar-thumb:hover{background:var(--text-light)}
+
+/* SVG icons fill */
+.sb-icon svg{width:18px;height:18px;fill:currentColor}
+</style>
+</head>
+<body>
+
+<!-- ==================== LOGIN ==================== -->
+<div id="login-overlay">
+  <div class="login-box">
+    <div class="login-logo">Sentinel Pro <span class="login-badge">DEMO</span></div>
+    <div class="login-sub">Industrial AI Diagnostics Platform — EPIConsulting</div>
+    <input class="login-field" type="email" id="login-email" value="admin@epi.com" placeholder="Email">
+    <input class="login-field" type="password" id="login-pass" value="••••••" placeholder="Password">
+    <button class="login-btn" onclick="doLogin()">Sign In</button>
+    <div class="login-hint">Demo credentials pre-filled — click Sign In to explore</div>
+  </div>
+</div>
+
+<!-- ==================== APP SHELL ==================== -->
+<div id="app">
+  <div class="demo-banner">INTERACTIVE DEMO — Simulated data for demonstration purposes</div>
+
+  <div style="display:flex;flex:1;overflow:hidden">
+  <!-- SIDEBAR -->
+  <nav id="sidebar">
+    <div class="sb-brand">
+      <div class="sb-brand-name">Sentinel Pro</div>
+      <div class="sb-brand-tag">EPIConsulting NC</div>
+    </div>
+    <select class="sb-machine-sel" id="machine-sel" onchange="selectMachine(this.value)">
+      <option value="all">All Machines</option>
+      <option value="xp1">Cross Ply XP1</option>
+      <option value="xp2">Cross Ply XP2</option>
+      <option value="xp3">Cross Ply XP3</option>
+      <option value="xp4">Cross Ply XP4</option>
+      <option value="xp5">Cross Ply XP5</option>
+    </select>
+    <div class="sb-nav">
+      <div class="sb-section">Main</div>
+      <div class="sb-item active" onclick="nav('dashboard')" id="nav-dashboard">
+        <div class="sb-icon"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg></div>
+        Dashboard
+      </div>
+      <div class="sb-item" onclick="nav('machines')" id="nav-machines">
+        <div class="sb-icon"><svg viewBox="0 0 24 24"><path d="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"/></svg></div>
+        Machines
+      </div>
+      <div class="sb-item" onclick="nav('documents')" id="nav-documents">
+        <div class="sb-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg></div>
+        Documents
+      </div>
+      <div class="sb-item" onclick="nav('diagnostics')" id="nav-diagnostics">
+        <div class="sb-icon"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg></div>
+        Diagnostics
+        <span class="sb-badge">AI</span>
+      </div>
+
+      <div class="sb-section">Intelligence</div>
+      <div class="sb-item" onclick="nav('memory')" id="nav-memory">
+        <div class="sb-icon"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></div>
+        Memory
+      </div>
+      <div class="sb-item" onclick="nav('reports')" id="nav-reports">
+        <div class="sb-icon"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg></div>
+        Reports
+      </div>
+
+      <div class="sb-section">Admin</div>
+      <div class="sb-item" onclick="nav('settings')" id="nav-settings">
+        <div class="sb-icon"><svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.49.49 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg></div>
+        Settings
+      </div>
+    </div>
+    <div class="sb-footer">
+      <span>v0.1.0</span> · EPIConsulting LLC
+    </div>
+  </nav>
+
+  <!-- MAIN AREA -->
+  <div id="main">
+    <div id="topbar">
+      <div class="tb-title" id="page-title">Dashboard</div>
+      <div class="tb-spacer"></div>
+      <div class="tb-machine"><span class="tb-dot"></span> <span id="tb-machine-label">All Machines</span></div>
+      <div class="tb-user">
+        <div class="tb-avatar">PA</div>
+        <div><div class="tb-name">Plant Admin</div><div class="tb-role">Administrator</div></div>
+      </div>
+    </div>
+    <div id="content">
+
+<!-- ==================== DASHBOARD ==================== -->
+<div class="screen active" id="screen-dashboard">
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-icon navy">&#9881;</div><div class="stat-val" id="s-machines">5</div><div class="stat-label">Active Machines</div></div>
+    <div class="stat-card"><div class="stat-icon steel">&#128196;</div><div class="stat-val" id="s-docs">1,247</div><div class="stat-label">Documents Indexed</div></div>
+    <div class="stat-card"><div class="stat-icon accent">&#128172;</div><div class="stat-val" id="s-sessions">89</div><div class="stat-label">Diagnostic Sessions</div></div>
+    <div class="stat-card"><div class="stat-icon green">&#9989;</div><div class="stat-val" id="s-health">94%</div><div class="stat-label">Memory Health</div></div>
+  </div>
+
+  <div class="section-title">Machine Fleet <span class="count">(5 machines)</span></div>
+  <div class="machine-grid mb-6" id="machine-fleet"></div>
+
+  <div class="activity-wrap">
+    <div class="card">
+      <div class="section-title">Recent Activity</div>
+      <div id="activity-feed"></div>
+    </div>
+    <div class="card">
+      <div class="section-title">System Status</div>
+      <div id="system-status"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MACHINES ==================== -->
+<div class="screen" id="screen-machines">
+  <div class="flex items-center justify-between mb-4">
+    <div class="section-title" style="margin:0">Machine Management</div>
+    <button class="btn btn-primary" onclick="showPopup('add-machine')">+ Add Machine</button>
+  </div>
+  <div class="doc-filters mb-4">
+    <input class="doc-search" placeholder="Search machines..." oninput="filterMachines(this.value)">
+    <div class="filter-chip active" onclick="filterMachineStatus(this,'all')">All</div>
+    <div class="filter-chip" onclick="filterMachineStatus(this,'online')">Online</div>
+    <div class="filter-chip" onclick="filterMachineStatus(this,'warning')">Warning</div>
+    <div class="filter-chip" onclick="filterMachineStatus(this,'maintenance')">Maintenance</div>
+  </div>
+  <div class="machine-grid" id="machines-full-grid"></div>
+</div>
+
+<!-- ==================== DOCUMENTS ==================== -->
+<div class="screen" id="screen-documents">
+  <div class="flex items-center justify-between mb-4">
+    <div class="section-title" style="margin:0">Document Repository <span class="count" id="doc-count">(1,247 files)</span></div>
+    <div class="flex gap-2">
+      <button class="btn btn-secondary" onclick="showPopup('upload')">&#8593; Upload</button>
+      <button class="btn btn-primary">+ New Text Doc</button>
+    </div>
+  </div>
+  <div class="doc-filters">
+    <input class="doc-search" placeholder="Search documents..." id="doc-search-input">
+    <div class="filter-chip active" data-cat="all">All</div>
+    <div class="filter-chip" data-cat="plc">PLC Code</div>
+    <div class="filter-chip" data-cat="manual">Manuals</div>
+    <div class="filter-chip" data-cat="schematic">Schematics</div>
+    <div class="filter-chip" data-cat="drive">Drives</div>
+    <div class="filter-chip" data-cat="hmi">HMI</div>
+    <div class="filter-chip" data-cat="tag">Tags</div>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <table class="doc-table" id="doc-table">
+      <thead><tr><th>Name</th><th>Machine</th><th>Type</th><th>Size</th><th>Indexed</th><th>Modified</th></tr></thead>
+      <tbody id="doc-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== DIAGNOSTICS ==================== -->
+<div class="screen" id="screen-diagnostics">
+  <div class="diag-layout">
+    <!-- Chat Panel -->
+    <div class="chat-panel">
+      <div class="chat-header">
+        <select id="diag-machine" style="min-width:140px">
+          <option>Cross Ply XP1</option><option>Cross Ply XP2</option><option>Cross Ply XP3</option>
+          <option>Cross Ply XP4</option><option selected>Cross Ply XP5</option>
+        </select>
+        <select id="diag-provider">
+          <option>Anthropic Claude</option><option>OpenAI GPT-4</option><option>xAI Grok</option><option>Google Gemini</option>
+        </select>
+        <div class="tb-spacer"></div>
+        <span class="text-xs text-sec">Session #47</span>
+      </div>
+      <div class="chat-messages" id="chat-messages"></div>
+      <div class="chat-input">
+        <input type="text" id="chat-input" placeholder="Ask about machine diagnostics..." onkeydown="if(event.key==='Enter')sendChat()">
+        <button class="chat-send" onclick="sendChat()">Send</button>
+      </div>
+    </div>
+    <!-- OPC Panel -->
+    <div class="opc-panel">
+      <div class="opc-header">
+        <div class="opc-header-title">OPC Bridge Monitor</div>
+        <div class="opc-status"><span class="tb-dot" style="background:var(--green)"></span> <span style="color:var(--green);font-weight:600">CONNECTED</span></div>
+      </div>
+      <div class="opc-content" id="opc-content"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MEMORY ==================== -->
+<div class="screen" id="screen-memory">
+  <div class="flex items-center justify-between mb-4">
+    <div class="section-title" style="margin:0">Memory Dashboard</div>
+    <div class="flex gap-2">
+      <button class="btn btn-secondary" onclick="showPopup('search')">&#128269; Semantic Search</button>
+      <button class="btn btn-primary">&#8635; Reindex All</button>
+    </div>
+  </div>
+
+  <div class="mem-overview">
+    <div class="card card-sm mem-ring-wrap">
+      <canvas id="ring-health" width="100" height="100" class="mem-ring"></canvas>
+      <div class="mem-ring-val">94%</div>
+      <div class="mem-ring-label">System Health</div>
+    </div>
+    <div class="card card-sm mem-ring-wrap">
+      <canvas id="ring-coverage" width="100" height="100" class="mem-ring"></canvas>
+      <div class="mem-ring-val">87%</div>
+      <div class="mem-ring-label">Data Coverage</div>
+    </div>
+    <div class="card card-sm mem-ring-wrap">
+      <canvas id="ring-indexed" width="100" height="100" class="mem-ring"></canvas>
+      <div class="mem-ring-val">42.6K</div>
+      <div class="mem-ring-label">Total Chunks</div>
+    </div>
+  </div>
+
+  <div class="mem-grid">
+    <div class="card">
+      <div class="section-title">Machine Memory</div>
+      <div id="mem-machines"></div>
+    </div>
+    <div>
+      <div class="card mb-4">
+        <div class="section-title">Content Distribution</div>
+        <canvas id="content-chart" width="340" height="180" style="width:100%"></canvas>
+      </div>
+      <div class="card">
+        <div class="section-title">Health Monitor</div>
+        <div id="health-items"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== REPORTS ==================== -->
+<div class="screen" id="screen-reports">
+  <div class="section-title mb-4">Report Generator <span class="count">(13 report types · 5 export formats)</span></div>
+  <div class="rpt-types" id="rpt-types"></div>
+  <div class="card">
+    <div class="section-title">Generated Reports</div>
+    <table class="doc-table">
+      <thead><tr><th>Report</th><th>Type</th><th>Machine</th><th>Format</th><th>Generated</th><th>Status</th></tr></thead>
+      <tbody id="rpt-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== SETTINGS ==================== -->
+<div class="screen" id="screen-settings">
+  <div class="section-title mb-4">AI Provider Configuration</div>
+  <div class="provider-grid" id="provider-grid"></div>
+  <div class="card mt-4">
+    <div class="section-title">AI Preferences</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+      <div>
+        <label class="text-xs text-sec font-semi" style="display:block;margin-bottom:4px">Default Provider</label>
+        <select style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg)">
+          <option selected>Anthropic (Claude)</option><option>OpenAI (GPT-4)</option><option>xAI (Grok)</option><option>Google (Gemini)</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-xs text-sec font-semi" style="display:block;margin-bottom:4px">Response Style</label>
+        <select style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg)">
+          <option selected>Technical — Detailed</option><option>Concise — Summary</option><option>Educational — Step by Step</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-xs text-sec font-semi" style="display:block;margin-bottom:4px">Citation Depth</label>
+        <select style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg)">
+          <option>Minimal</option><option selected>Standard</option><option>Comprehensive</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+  </div>
+</div>
+
+<!-- POPUP OVERLAY -->
+<div id="overlay" onclick="closePopup()">
+  <div id="popup" onclick="event.stopPropagation()"></div>
+</div>
+
+<!-- ==================== JAVASCRIPT ==================== -->
+<script>
+// ===== DATA =====
+var machines = [
+  {id:'xp1',name:'Cross Ply XP1',type:'Cross Ply Laminator',status:'online',docs:312,indexed:96,nodes:1840,location:'Building A'},
+  {id:'xp2',name:'Cross Ply XP2',type:'Cross Ply Laminator',status:'online',docs:287,indexed:93,nodes:1650,location:'Building A'},
+  {id:'xp3',name:'Cross Ply XP3',type:'Cross Ply Laminator',status:'warning',docs:198,indexed:78,nodes:1200,location:'Building B'},
+  {id:'xp4',name:'Cross Ply XP4',type:'Cross Ply Laminator',status:'maintenance',docs:245,indexed:88,nodes:1420,location:'Building B'},
+  {id:'xp5',name:'Cross Ply XP5',type:'Cross Ply Laminator',status:'online',docs:205,indexed:91,nodes:1490,location:'Building C'}
+];
+var statusColors = {online:'var(--green)',warning:'var(--yellow)',maintenance:'var(--cyan)',offline:'var(--red)'};
+
+var documents = [
+  {name:'XP1_MainRoutine.l5x',machine:'XP1',cat:'plc',size:'2.4 MB',indexed:true,date:'2026-03-28'},
+  {name:'XP5_PlatenControl.l5x',machine:'XP5',cat:'plc',size:'1.8 MB',indexed:true,date:'2026-03-27'},
+  {name:'BL4_Ladder_Main.ulpr',machine:'BL4',cat:'plc',size:'3.1 MB',indexed:true,date:'2026-03-25'},
+  {name:'XP1_Operations_Manual.pdf',machine:'XP1',cat:'manual',size:'12.6 MB',indexed:true,date:'2026-03-22'},
+  {name:'XP3_Maintenance_Guide.pdf',machine:'XP3',cat:'manual',size:'8.3 MB',indexed:true,date:'2026-03-20'},
+  {name:'XP2_Drive_Parameters.ypj',machine:'XP2',cat:'drive',size:'156 KB',indexed:true,date:'2026-03-18'},
+  {name:'XP5_Electrical_446EE1400.dwg',machine:'XP5',cat:'schematic',size:'4.7 MB',indexed:true,date:'2026-03-15'},
+  {name:'XP1_Panel_Layout.pdf',machine:'XP1',cat:'schematic',size:'2.1 MB',indexed:true,date:'2026-03-14'},
+  {name:'XP4_HMI_Project.mer',machine:'XP4',cat:'hmi',size:'18.2 MB',indexed:false,date:'2026-03-12'},
+  {name:'XP3_IO_Tags.csv',machine:'XP3',cat:'tag',size:'245 KB',indexed:true,date:'2026-03-10'},
+  {name:'XP5_Yaskawa_A1000.ypj',machine:'XP5',cat:'drive',size:'89 KB',indexed:true,date:'2026-03-08'},
+  {name:'XP2_Safety_Schematic.svg',machine:'XP2',cat:'schematic',size:'1.3 MB',indexed:true,date:'2026-03-05'},
+  {name:'BL3_HMI_Screens.ulpr',machine:'BL3',cat:'plc',size:'2.7 MB',indexed:true,date:'2026-03-03'},
+  {name:'XP1_Alarm_Config.csv',machine:'XP1',cat:'tag',size:'67 KB',indexed:true,date:'2026-02-28'},
+  {name:'XP4_ControlLogix_Main.l5x',machine:'XP4',cat:'plc',size:'3.5 MB',indexed:true,date:'2026-02-25'},
+];
+
+var activities = [
+  {text:'Diagnostic session completed on <b>XP5</b> — Platen heater fault analysis',time:'2 min ago',color:'var(--steel)'},
+  {text:'3 documents re-indexed for <b>XP1</b>',time:'15 min ago',color:'var(--green)'},
+  {text:'OPC Bridge agent connected from <b>Win11-Floor1</b>',time:'32 min ago',color:'var(--cyan)'},
+  {text:'Warning: <b>XP3</b> drive parameter drift detected',time:'1 hr ago',color:'var(--yellow)'},
+  {text:'New L5X uploaded: <b>XP4_ControlLogix_v2.l5x</b>',time:'2 hr ago',color:'var(--navy)'},
+  {text:'Memory reindex completed — 42,579 chunks processed',time:'4 hr ago',color:'var(--green)'},
+  {text:'User <b>tech@epi.com</b> started diagnostic session on <b>XP2</b>',time:'5 hr ago',color:'var(--steel)'},
+];
+
+var sysStatus = [
+  {name:'Backend API',status:'ok'},{name:'ChromaDB Vector Store',status:'ok'},
+  {name:'Health Daemon',status:'ok'},{name:'OPC Bridge',status:'ok'},
+  {name:'LLM Service (Anthropic)',status:'ok'},{name:'Document Indexer',status:'ok'},
+  {name:'XP3 Drive Comms',status:'warn'},{name:'Backup Service',status:'ok'}
+];
+
+var chatHistory = [
+  {role:'user',text:'What are the common fault codes for the XP5 platen heating system?'},
+  {role:'ai',text:'Based on the XP5 documentation and L5X program analysis, here are the common platen heater fault codes:\n\n<b>F-101: Zone Over-Temperature</b>\nTriggered when any platen zone exceeds 425°F setpoint by >15°F. Check thermocouple wiring at TB-3 terminals 1-12.\n\n<b>F-102: Heater Open Circuit</b>\nSSR output active but no current detected on CT-1 through CT-6. Verify heater element resistance (expected 18-22Ω per zone).\n\n<b>F-103: Communication Loss</b>\nControlLogix cannot reach platen controller via EtherNet/IP. Check cable at Port 2 of 1756-EN2T module in Slot 1.\n\n<b>F-104: Zone Imbalance</b>\nTemperature differential >20°F between adjacent zones. Usually indicates a failed heater element or loose TC connection.',sources:['XP5_PlatenControl.l5x','XP5_Operations_Manual.pdf','XP5_Electrical_446EE1400.dwg']},
+  {role:'user',text:'Show me the PLC logic for F-102 detection'},
+  {role:'ai',text:'From the L5X program analysis of <b>XP5_PlatenControl.l5x</b>, the F-102 fault detection is in <code>MainRoutine</code> Rung 47:\n\n<pre style="background:#f8fafc;padding:10px;border-radius:6px;font-size:12px;margin:8px 0;overflow-x:auto">Rung 47: Heater Open Circuit Detection\n├─ XIC SSR_Zone[1]_Out ──┬── TON T_HeaterCheck ──\n│                        │   PRE: 2000 (2 sec)  \n│                        │                       \n├─ XIC T_HeaterCheck.DN ─┤── LES CT_Zone[1] 0.5 ─\n│                        │                       \n└── OTE F102_Fault ──────┘── MOV 102 FaultCode</pre>\n\nThe logic enables the SSR output, waits 2 seconds for current to stabilize, then checks if the current transformer reading is below 0.5A. If so, it latches F-102 and writes fault code 102 to the HMI display register.\n\nThe fault must be manually reset via the HMI "Fault Reset" button, which calls the <code>FaultReset</code> subroutine.',sources:['XP5_PlatenControl.l5x']},
+];
+
+var opcTags = [
+  {name:'Zone1_Temp',val:387.2,unit:'°F',status:'ok'},
+  {name:'Zone2_Temp',val:391.8,unit:'°F',status:'ok'},
+  {name:'Zone3_Temp',val:412.4,unit:'°F',status:'warn'},
+  {name:'Zone4_Temp',val:388.5,unit:'°F',status:'ok'},
+  {name:'Platen_Pressure',val:42.3,unit:'PSI',status:'ok'},
+  {name:'Line_Speed',val:18.7,unit:'ft/min',status:'ok'},
+  {name:'Web_Tension',val:245,unit:'lbf',status:'ok'},
+  {name:'Drive_Current',val:12.8,unit:'A',status:'ok'},
+];
+
+var providers = [
+  {name:'Anthropic',model:'Claude Sonnet 4',logo:'A',color:'#d97706',configured:true,default:true,desc:'Advanced reasoning and analysis'},
+  {name:'OpenAI',model:'GPT-4 Turbo',logo:'O',color:'#10a37f',configured:true,default:false,desc:'General purpose intelligence'},
+  {name:'xAI',model:'Grok-2',logo:'X',color:'#000',configured:true,default:false,desc:'Real-time knowledge integration'},
+  {name:'Google',model:'Gemini Pro',logo:'G',color:'#4285f4',configured:false,default:false,desc:'Multimodal capabilities'},
+];
+
+var reportTypes = [
+  {icon:'&#128203;',name:'Diagnostic Summary',desc:'AI-generated diagnostic findings'},
+  {icon:'&#128295;',name:'Maintenance Report',desc:'Scheduled maintenance checklist'},
+  {icon:'&#128200;',name:'Trend Analysis',desc:'Parameter trends over time'},
+  {icon:'&#9888;&#65039;',name:'Alarm Analysis',desc:'Alarm frequency and patterns'},
+  {icon:'&#128268;',name:'Drive Parameters',desc:'VFD configuration comparison'},
+  {icon:'&#128187;',name:'PLC Code Review',desc:'Logic analysis and optimization'},
+  {icon:'&#128208;',name:'System Health',desc:'Platform health overview'},
+  {icon:'&#127959;&#65039;',name:'Machine Profile',desc:'Complete machine documentation'},
+  {icon:'&#128274;',name:'Safety Audit',desc:'Safety system compliance check'},
+];
+
+var reports = [
+  {name:'XP5 Platen Diagnostic — March 2026',type:'Diagnostic Summary',machine:'XP5',format:'PDF',date:'2026-03-28',status:'Complete'},
+  {name:'XP1 Quarterly Maintenance',type:'Maintenance Report',machine:'XP1',format:'DOCX',date:'2026-03-25',status:'Complete'},
+  {name:'XP3 Drive Trend Q1 2026',type:'Trend Analysis',machine:'XP3',format:'PDF',date:'2026-03-20',status:'Complete'},
+  {name:'All Machines — Alarm Summary',type:'Alarm Analysis',machine:'All',format:'XLSX',date:'2026-03-15',status:'Complete'},
+  {name:'BL4 PLC Code Review',type:'PLC Code Review',machine:'BL4',format:'PDF',date:'2026-03-10',status:'In Progress'},
+];
+
+var memMachines = [
+  {name:'Cross Ply XP1',vectors:8420,indexed:312,coverage:96,health:'ok'},
+  {name:'Cross Ply XP2',vectors:7650,indexed:287,coverage:93,health:'ok'},
+  {name:'Cross Ply XP3',vectors:5200,indexed:198,coverage:78,health:'warn'},
+  {name:'Cross Ply XP4',vectors:6820,indexed:245,coverage:88,health:'ok'},
+  {name:'Cross Ply XP5',vectors:7490,indexed:205,coverage:91,health:'ok'},
+  {name:'BL3 Printer',vectors:2100,indexed:48,coverage:65,health:'warn'},
+  {name:'BL4 Printer',vectors:4899,indexed:102,coverage:82,health:'ok'},
+];
+
+var healthChecks = [
+  {name:'ChromaDB',status:'ok'},{name:'Embedding Model',status:'ok'},{name:'Health Daemon',status:'ok'},
+  {name:'Index Queue',status:'ok'},{name:'Backup Service',status:'ok'},{name:'XP3 Coverage',status:'warn'},
+];
+
+// ===== INIT =====
+function init() {
+  renderMachineFleet();
+  renderMachinesPage();
+  renderActivityFeed();
+  renderSystemStatus();
+  renderDocuments();
+  renderChatHistory();
+  renderOpcPanel();
+  renderMemory();
+  renderReports();
+  renderProviders();
+  startSimulation();
+}
+
+// ===== NAVIGATION =====
+function nav(id) {
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});
+  document.querySelectorAll('.sb-item').forEach(function(s){s.classList.remove('active')});
+  document.getElementById('screen-'+id).classList.add('active');
+  document.getElementById('nav-'+id).classList.add('active');
+  var titles = {dashboard:'Dashboard',machines:'Machines',documents:'Documents',diagnostics:'AI Diagnostics',memory:'Memory Dashboard',reports:'Report Generator',settings:'Settings'};
+  document.getElementById('page-title').textContent = titles[id] || id;
+  document.getElementById('content').scrollTop = 0;
+  if(id==='diagnostics'){
+    document.getElementById('content').style.padding='0';
+  } else {
+    document.getElementById('content').style.padding='24px';
+  }
+}
+
+function selectMachine(val) {
+  var label = val === 'all' ? 'All Machines' : machines.find(function(m){return m.id===val}).name;
+  document.getElementById('tb-machine-label').textContent = label;
+}
+
+// ===== LOGIN =====
+function doLogin() {
+  document.getElementById('login-overlay').classList.add('hidden');
+  document.getElementById('app').classList.add('visible');
+  init();
+}
+
+// ===== RENDER: DASHBOARD =====
+function renderMachineFleet() {
+  var html = '';
+  machines.forEach(function(m) {
+    var barColor = m.indexed > 90 ? 'var(--green)' : m.indexed > 70 ? 'var(--yellow)' : 'var(--red)';
+    html += '<div class="m-card" onclick="showPopup(\'machine\',\''+m.id+'\')">'
+      + '<div class="m-header"><div class="m-icon">'+m.name.split(' ')[2].charAt(0)+m.name.split(' ')[2].charAt(1)+'</div>'
+      + '<div><div class="m-name">'+m.name+'</div><div class="m-type">'+m.type+'</div></div></div>'
+      + '<div class="m-status"><span class="m-status-dot" style="background:'+statusColors[m.status]+'"></span> '+m.status.charAt(0).toUpperCase()+m.status.slice(1)+'</div>'
+      + '<div class="m-stats"><div>Docs<br><span class="m-stat-val">'+m.docs+'</span></div>'
+      + '<div>Indexed<br><span class="m-stat-val">'+m.indexed+'%</span></div>'
+      + '<div>Memory<br><span class="m-stat-val">'+m.nodes.toLocaleString()+'</span></div>'
+      + '<div>Location<br><span class="m-stat-val" style="font-size:11px">'+m.location+'</span></div></div>'
+      + '<div class="m-progress"><div class="m-progress-bar" style="width:'+m.indexed+'%;background:'+barColor+'"></div></div>'
+      + '</div>';
+  });
+  document.getElementById('machine-fleet').innerHTML = html;
+}
+
+function renderMachinesPage() {
+  document.getElementById('machines-full-grid').innerHTML = document.getElementById('machine-fleet').innerHTML;
+}
+
+function renderActivityFeed() {
+  var html = '';
+  activities.forEach(function(a) {
+    html += '<div class="feed-item"><div class="feed-dot" style="background:'+a.color+'"></div>'
+      + '<div><div class="feed-text">'+a.text+'</div><div class="feed-time">'+a.time+'</div></div></div>';
+  });
+  document.getElementById('activity-feed').innerHTML = html;
+}
+
+function renderSystemStatus() {
+  var html = '';
+  sysStatus.forEach(function(s) {
+    var c = s.status === 'ok' ? 'var(--green)' : s.status === 'warn' ? 'var(--yellow)' : 'var(--red)';
+    html += '<div class="sys-item"><div class="sys-dot" style="background:'+c+'"></div><span>'+s.name+'</span>'
+      + '<span style="margin-left:auto" class="text-xs font-semi" style="color:'+c+'">'+s.status.toUpperCase()+'</span></div>';
+  });
+  document.getElementById('system-status').innerHTML = html;
+}
+
+// ===== RENDER: DOCUMENTS =====
+function renderDocuments() {
+  var html = '';
+  documents.forEach(function(d) {
+    html += '<tr><td><span class="font-semi">'+d.name+'</span></td><td>'+d.machine+'</td>'
+      + '<td><span class="doc-type '+d.cat+'">'+d.cat.toUpperCase()+'</span></td>'
+      + '<td class="text-sec">'+d.size+'</td>'
+      + '<td><span class="idx-badge '+(d.indexed?'yes':'no')+'">'+(d.indexed?'Indexed':'Pending')+'</span></td>'
+      + '<td class="text-sec">'+d.date+'</td></tr>';
+  });
+  document.getElementById('doc-tbody').innerHTML = html;
+
+  // Category filter clicks
+  document.querySelectorAll('#screen-documents .filter-chip').forEach(function(chip) {
+    chip.onclick = function() {
+      document.querySelectorAll('#screen-documents .filter-chip').forEach(function(c){c.classList.remove('active')});
+      chip.classList.add('active');
+      var cat = chip.getAttribute('data-cat');
+      var rows = document.querySelectorAll('#doc-tbody tr');
+      rows.forEach(function(row) {
+        if(cat === 'all') { row.style.display = ''; }
+        else {
+          var type = row.querySelector('.doc-type').textContent.toLowerCase();
+          row.style.display = type === cat ? '' : 'none';
+        }
+      });
+    };
+  });
+}
+
+// ===== RENDER: DIAGNOSTICS =====
+function renderChatHistory() {
+  var html = '';
+  chatHistory.forEach(function(m) {
+    html += '<div class="msg '+m.role+'">';
+    html += '<div class="msg-bubble">'+m.text+'</div>';
+    if(m.sources) {
+      m.sources.forEach(function(s) { html += '<span class="msg-source">&#128196; '+s+'</span> '; });
+    }
+    html += '<div class="msg-meta"><span>'+(m.role==='user'?'You':'Sentinel AI')+'</span><span>just now</span></div>';
+    html += '</div>';
+  });
+  document.getElementById('chat-messages').innerHTML = html;
+  var el = document.getElementById('chat-messages');
+  el.scrollTop = el.scrollHeight;
+}
+
+function renderOpcPanel() {
+  var html = '<div class="opc-section"><div class="opc-section-title">Agent: Win11-Floor1</div>'
+    + '<div style="font-size:11px;color:var(--text-sec);margin-bottom:12px">Device: CompactLogix 1756-L83E · Uptime: 4d 7h · Buffer: 0</div></div>';
+  html += '<div class="opc-section"><div class="opc-section-title">Live Tag Readings</div>';
+  opcTags.forEach(function(t) {
+    html += '<div class="opc-tag"><span class="opc-tag-name">'+t.name+'</span>'
+      + '<span class="opc-tag-val '+t.status+'" id="opc-'+t.name+'">'+t.val.toFixed(1)+' '+t.unit+'</span></div>';
+  });
+  html += '</div>';
+  html += '<div class="opc-section"><div class="opc-section-title">Trend — Zone3_Temp</div>'
+    + '<canvas id="opc-trend" class="opc-chart" width="340" height="100"></canvas></div>';
+  html += '<div class="opc-section"><div class="opc-section-title" style="margin-bottom:4px">Tag Suggestions</div>'
+    + '<div style="font-size:11px;color:var(--text-sec);margin-bottom:8px">AI-recommended tags based on diagnostic context</div>'
+    + '<div class="opc-tag" style="border-color:var(--accent);background:rgba(232,118,43,.04)"><span class="opc-tag-name" style="color:var(--accent)">SSR_Zone3_Status</span>'
+    + '<button class="btn btn-accent" style="padding:3px 10px;font-size:10px" onclick="showPopup(\'tag-approved\')">Approve</button></div>'
+    + '<div class="opc-tag" style="border-color:var(--accent);background:rgba(232,118,43,.04)"><span class="opc-tag-name" style="color:var(--accent)">Heater3_Current</span>'
+    + '<button class="btn btn-accent" style="padding:3px 10px;font-size:10px">Approve</button></div></div>';
+  document.getElementById('opc-content').innerHTML = html;
+  drawOpcTrend();
+}
+
+var trendData = [];
+function drawOpcTrend() {
+  if(trendData.length === 0) {
+    for(var i = 0; i < 40; i++) trendData.push(390 + Math.random() * 25);
+  }
+  var c = document.getElementById('opc-trend');
+  if(!c) return;
+  var ctx = c.getContext('2d');
+  var w = c.width, h = c.height;
+  ctx.clearRect(0,0,w,h);
+  // Grid
+  ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 0.5;
+  for(var y = 0; y < h; y += 25) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); }
+  // Warning line
+  ctx.strokeStyle = '#fbbf2480'; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+  var warnY = h - ((410 - 380) / 50) * h;
+  ctx.beginPath(); ctx.moveTo(0,warnY); ctx.lineTo(w,warnY); ctx.stroke();
+  ctx.setLineDash([]);
+  // Data line
+  ctx.strokeStyle = 'var(--steel)'; ctx.lineWidth = 2; ctx.beginPath();
+  var step = w / (trendData.length - 1);
+  trendData.forEach(function(v,i) {
+    var x = i * step;
+    var y = h - ((v - 380) / 50) * h;
+    if(i === 0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+  // Fill
+  ctx.lineTo(w,h); ctx.lineTo(0,h); ctx.closePath();
+  ctx.fillStyle = 'rgba(74,144,184,.08)'; ctx.fill();
+}
+
+// ===== RENDER: MEMORY =====
+function renderMemory() {
+  // Coverage rings (simple arc charts)
+  drawRing('ring-health', 0.94, '#22c55e');
+  drawRing('ring-coverage', 0.87, '#4a90b8');
+  drawRing('ring-indexed', 0.92, '#1e3a5f');
+
+  // Machine memory list
+  var html = '';
+  memMachines.forEach(function(m) {
+    var barColor = m.coverage > 90 ? 'var(--green)' : m.coverage > 70 ? 'var(--yellow)' : 'var(--red)';
+    html += '<div class="mem-machine"><div class="mem-machine-name">'+m.name+' <span class="health-badge '+m.health+'">'+m.health.toUpperCase()+'</span></div>'
+      + '<div class="mem-machine-stats"><span>'+m.vectors.toLocaleString()+' vectors</span><span>'+m.indexed+' docs</span><span>'+m.coverage+'% coverage</span></div>'
+      + '<div class="m-progress" style="margin-top:6px"><div class="m-progress-bar" style="width:'+m.coverage+'%;background:'+barColor+'"></div></div></div>';
+  });
+  document.getElementById('mem-machines').innerHTML = html;
+
+  // Health checks
+  html = '';
+  healthChecks.forEach(function(h) {
+    html += '<div class="health-item"><span>'+h.name+'</span><span class="health-badge '+h.status+'">'+h.status.toUpperCase()+'</span></div>';
+  });
+  document.getElementById('health-items').innerHTML = html;
+
+  // Content distribution chart
+  drawContentChart();
+}
+
+function drawRing(id, pct, color) {
+  var c = document.getElementById(id);
+  if(!c) return;
+  var ctx = c.getContext('2d');
+  var cx = 50, cy = 50, r = 40, lw = 8;
+  ctx.clearRect(0,0,100,100);
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
+  ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = lw; ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx,cy,r,-Math.PI/2,-Math.PI/2+Math.PI*2*pct);
+  ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.lineCap = 'round'; ctx.stroke();
+}
+
+function drawContentChart() {
+  var c = document.getElementById('content-chart');
+  if(!c) return;
+  var ctx = c.getContext('2d');
+  var data = [
+    {label:'PLC Code',val:35,color:'#1d4ed8'},
+    {label:'Manuals',val:25,color:'#d97706'},
+    {label:'Schematics',val:18,color:'#059669'},
+    {label:'Drive Params',val:10,color:'#7c3aed'},
+    {label:'HMI',val:7,color:'#db2777'},
+    {label:'Tag Data',val:5,color:'#4338ca'},
+  ];
+  var w = c.width, h = c.height;
+  var barW = 36, gap = (w - data.length * barW) / (data.length + 1);
+  var maxH = h - 40;
+  ctx.clearRect(0,0,w,h);
+  data.forEach(function(d, i) {
+    var x = gap + i * (barW + gap);
+    var bh = (d.val / 40) * maxH;
+    // Bar
+    ctx.fillStyle = d.color; ctx.beginPath();
+    var r = 4;
+    ctx.moveTo(x+r, h-30-bh); ctx.lineTo(x+barW-r, h-30-bh);
+    ctx.quadraticCurveTo(x+barW, h-30-bh, x+barW, h-30-bh+r);
+    ctx.lineTo(x+barW, h-30); ctx.lineTo(x, h-30);
+    ctx.lineTo(x, h-30-bh+r);
+    ctx.quadraticCurveTo(x, h-30-bh, x+r, h-30-bh);
+    ctx.fill();
+    // Value
+    ctx.fillStyle = '#64748b'; ctx.font = '10px Inter,sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(d.val+'%', x + barW/2, h-30-bh-6);
+    // Label
+    ctx.fillStyle = '#94a3b8'; ctx.font = '9px Inter,sans-serif';
+    ctx.fillText(d.label, x + barW/2, h-8);
+  });
+}
+
+// ===== RENDER: REPORTS =====
+function renderReports() {
+  var html = '';
+  reportTypes.forEach(function(r,i) {
+    html += '<div class="rpt-type'+(i===0?' selected':'')+'" onclick="selectReportType(this)">'
+      + '<div class="rpt-type-icon">'+r.icon+'</div>'
+      + '<div class="rpt-type-name">'+r.name+'</div>'
+      + '<div class="rpt-type-desc">'+r.desc+'</div></div>';
+  });
+  document.getElementById('rpt-types').innerHTML = html;
+
+  html = '';
+  reports.forEach(function(r) {
+    var statusColor = r.status === 'Complete' ? 'var(--green)' : 'var(--accent)';
+    html += '<tr><td class="font-semi">'+r.name+'</td><td class="text-sec">'+r.type+'</td>'
+      + '<td>'+r.machine+'</td><td><span class="tag" style="background:var(--bg)">'+r.format+'</span></td>'
+      + '<td class="text-sec">'+r.date+'</td>'
+      + '<td><span style="color:'+statusColor+';font-weight:600;font-size:12px">'+r.status+'</span></td></tr>';
+  });
+  document.getElementById('rpt-tbody').innerHTML = html;
+}
+
+function selectReportType(el) {
+  document.querySelectorAll('.rpt-type').forEach(function(r){r.classList.remove('selected')});
+  el.classList.add('selected');
+}
+
+// ===== RENDER: SETTINGS =====
+function renderProviders() {
+  var html = '';
+  providers.forEach(function(p) {
+    var logoColors = {'A':'#d97706','O':'#10a37f','X':'#1e293b','G':'#4285f4'};
+    html += '<div class="prov-card'+(p.default?' default':'')+'">'
+      + (p.default ? '<div class="prov-default">DEFAULT</div>' : '')
+      + '<div class="prov-logo" style="background:'+logoColors[p.logo]+'20;color:'+logoColors[p.logo]+'">'+p.logo+'</div>'
+      + '<div class="prov-name">'+p.name+'</div>'
+      + '<div class="prov-desc">'+p.desc+'</div>'
+      + '<div class="prov-field"><label>API Key</label>'
+      + '<input type="password" value="'+(p.configured?'sk-ant-xxxxxxxxxxxx':'')+ '" placeholder="Enter API key..."></div>'
+      + '<div class="prov-field"><label>Model</label>'
+      + '<input type="text" value="'+p.model+'" readonly style="color:var(--text-sec)"></div>'
+      + '<div class="prov-status"><span class="sys-dot" style="width:6px;height:6px;border-radius:50%;background:'+(p.configured?'var(--green)':'var(--red)')+'"></span>'
+      + '<span style="color:'+(p.configured?'var(--green)':'var(--red)')+'">'+( p.configured?'Connected':'Not Configured')+'</span></div>'
+      + '<div class="prov-actions"><button class="btn btn-secondary">Test</button>'
+      + (p.default?'':'<button class="btn btn-primary">Set Default</button>')+'</div>'
+      + '</div>';
+  });
+  document.getElementById('provider-grid').innerHTML = html;
+}
+
+// ===== CHAT =====
+var aiResponses = [
+  {text:'Based on the XP5 maintenance documentation, the recommended torque spec for the platen mounting bolts is <b>45 ft-lbs</b> with Loctite 242 (blue) medium-strength threadlocker. The bolts should be tightened in a star pattern to ensure even pressure distribution across the platen surface.\n\nReference: Section 4.2.3 of the XP5 Operations Manual.',sources:['XP5_Operations_Manual.pdf']},
+  {text:'Analyzing the drive parameters from the Yaskawa A1000 configuration:\n\n<b>Current Status:</b> The acceleration time (C1-01) is set to 10.0 seconds, which is within the recommended range for this web handling application.\n\n<b>Potential Issue:</b> The overvoltage suppression (L3-04) is disabled. For regenerative loads like cross-ply winders, this should be enabled to prevent OV faults during deceleration.\n\n<b>Recommendation:</b> Set L3-04 = 1 (Enabled) and verify L3-05 decel time is ≥ 5.0 seconds.',sources:['XP5_Yaskawa_A1000.ypj','XP5_Operations_Manual.pdf']},
+  {text:'The OPC data shows <b>Zone 3 temperature is trending high</b> at 412.4°F (setpoint: 400°F). Cross-referencing with the electrical schematics:\n\n1. Check SSR-3 on panel drawing 446EE1400, Sheet 12\n2. Verify thermocouple TC-3 at terminal block TB-3, pins 5-6\n3. The heater element for Zone 3 draws 4.8 kW — measure with clamp meter at contactor K3\n\nThis pattern is consistent with a degraded SSR (solid-state relay) that\'s partially conducting. The SSR should switch fully off between cycles but may be leaking current.',sources:['XP5_Electrical_446EE1400.dwg','XP5_PlatenControl.l5x']},
+];
+var aiIdx = 0;
+
+function sendChat() {
+  var input = document.getElementById('chat-input');
+  var text = input.value.trim();
+  if(!text) return;
+  input.value = '';
+
+  // Add user message
+  var container = document.getElementById('chat-messages');
+  var userMsg = document.createElement('div');
+  userMsg.className = 'msg user';
+  userMsg.innerHTML = '<div class="msg-bubble">'+escHtml(text)+'</div><div class="msg-meta"><span>You</span><span>just now</span></div>';
+  container.appendChild(userMsg);
+
+  // Typing indicator
+  var typing = document.createElement('div');
+  typing.className = 'msg ai';
+  typing.id = 'typing';
+  typing.innerHTML = '<div class="msg-bubble"><div class="chat-typing"><span></span><span></span><span></span></div></div>';
+  container.appendChild(typing);
+  container.scrollTop = container.scrollHeight;
+
+  // Simulate AI response after delay
+  setTimeout(function() {
+    var resp = aiResponses[aiIdx % aiResponses.length];
+    aiIdx++;
+    typing.remove();
+
+    var aiMsg = document.createElement('div');
+    aiMsg.className = 'msg ai';
+    var srcHtml = '';
+    if(resp.sources) {
+      resp.sources.forEach(function(s) { srcHtml += '<span class="msg-source">&#128196; '+s+'</span> '; });
+    }
+    aiMsg.innerHTML = '<div class="msg-bubble">'+resp.text+'</div>'+srcHtml
+      + '<div class="msg-meta"><span>Sentinel AI (Claude Sonnet)</span><span>just now</span></div>';
+    container.appendChild(aiMsg);
+    container.scrollTop = container.scrollHeight;
+  }, 1500 + Math.random() * 1000);
+}
+
+function escHtml(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+// ===== SIMULATION =====
+function startSimulation() {
+  // Update OPC values
+  setInterval(function() {
+    opcTags.forEach(function(t) {
+      var delta = (Math.random() - 0.48) * 2;
+      t.val = Math.max(0, t.val + delta);
+      if(t.name.indexOf('Temp') >= 0) {
+        t.val = Math.max(350, Math.min(430, t.val));
+        t.status = t.val > 410 ? 'warn' : t.val > 420 ? 'high' : 'ok';
+      }
+      var el = document.getElementById('opc-' + t.name);
+      if(el) {
+        el.textContent = t.val.toFixed(1) + ' ' + t.unit;
+        el.className = 'opc-tag-val ' + t.status;
+      }
+    });
+    // Update trend
+    trendData.push(opcTags[2].val);
+    if(trendData.length > 40) trendData.shift();
+    drawOpcTrend();
+  }, 1800);
+
+  // Update session count occasionally
+  setInterval(function() {
+    var el = document.getElementById('s-sessions');
+    var v = parseInt(el.textContent);
+    el.textContent = v + 1;
+  }, 30000);
+}
+
+// ===== POPUP =====
+function showPopup(type, data) {
+  var html = '';
+  if(type === 'machine') {
+    var m = machines.find(function(x){return x.id===data});
+    html = '<div class="popup-title"><span>'+m.name+'</span><span class="popup-close" onclick="closePopup()">&times;</span></div>'
+      + '<div class="flex gap-4 mb-4"><div><span class="text-xs text-sec">Type</span><br><span class="font-semi">'+m.type+'</span></div>'
+      + '<div><span class="text-xs text-sec">Location</span><br><span class="font-semi">'+m.location+'</span></div>'
+      + '<div><span class="text-xs text-sec">Status</span><br><span class="font-semi" style="color:'+statusColors[m.status]+'">'+m.status.toUpperCase()+'</span></div></div>'
+      + '<div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">'
+      + '<div class="stat-card card-sm"><div class="stat-val" style="font-size:20px">'+m.docs+'</div><div class="stat-label">Documents</div></div>'
+      + '<div class="stat-card card-sm"><div class="stat-val" style="font-size:20px">'+m.indexed+'%</div><div class="stat-label">Indexed</div></div>'
+      + '<div class="stat-card card-sm"><div class="stat-val" style="font-size:20px">'+m.nodes.toLocaleString()+'</div><div class="stat-label">Memory Nodes</div></div></div>'
+      + '<div class="flex gap-2"><button class="btn btn-primary" onclick="closePopup();nav(\'diagnostics\')">Start Diagnostic</button>'
+      + '<button class="btn btn-secondary" onclick="closePopup();nav(\'documents\')">View Documents</button></div>';
+  } else if(type === 'upload') {
+    html = '<div class="popup-title"><span>Upload Documents</span><span class="popup-close" onclick="closePopup()">&times;</span></div>'
+      + '<div style="border:2px dashed var(--border);border-radius:12px;padding:40px;text-align:center;margin-bottom:16px;background:var(--bg)">'
+      + '<div style="font-size:32px;margin-bottom:8px">&#128193;</div>'
+      + '<div class="font-semi mb-2">Drag & drop files here</div>'
+      + '<div class="text-xs text-sec">Supports: PDF, L5X, DWG, ULPR, YPJ, CSV, and more</div></div>'
+      + '<div class="flex gap-2"><select style="flex:1;padding:8px;border:1px solid var(--border);border-radius:6px"><option>Select Machine...</option>'
+      + '<option>Cross Ply XP1</option><option>Cross Ply XP2</option><option>Cross Ply XP3</option><option>Cross Ply XP4</option><option>Cross Ply XP5</option></select>'
+      + '<button class="btn btn-primary">Browse Files</button></div>';
+  } else if(type === 'search') {
+    html = '<div class="popup-title"><span>Semantic Search</span><span class="popup-close" onclick="closePopup()">&times;</span></div>'
+      + '<div class="mb-4"><input class="login-field" placeholder="Search machine memory..." style="margin:0">'
+      + '<div class="flex gap-2 mt-2"><select style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px"><option>All Machines</option>'
+      + '<option>XP1</option><option>XP2</option><option>XP3</option><option>XP4</option><option>XP5</option></select>'
+      + '<button class="btn btn-primary">Search</button></div></div>'
+      + '<div class="text-xs text-sec">Enter a natural language query to search across all indexed machine documentation using semantic similarity.</div>';
+  } else if(type === 'tag-approved') {
+    html = '<div class="popup-title"><span style="color:var(--green)">&#9989; Tag Approved</span><span class="popup-close" onclick="closePopup()">&times;</span></div>'
+      + '<div class="text-sm mb-4">Tag <b>SSR_Zone3_Status</b> has been approved and will be added to the OPC monitoring list.</div>'
+      + '<button class="btn btn-primary" onclick="closePopup()">OK</button>';
+  } else if(type === 'add-machine') {
+    html = '<div class="popup-title"><span>Add Machine</span><span class="popup-close" onclick="closePopup()">&times;</span></div>'
+      + '<div class="prov-field"><label>Machine Name</label><input class="login-field" placeholder="e.g. Cross Ply XP6" style="margin-bottom:8px"></div>'
+      + '<div class="prov-field"><label>Display Name</label><input class="login-field" placeholder="e.g. XP6 Laminator" style="margin-bottom:8px"></div>'
+      + '<div class="prov-field"><label>Machine Type</label><input class="login-field" placeholder="e.g. Cross Ply Laminator" style="margin-bottom:8px"></div>'
+      + '<div class="prov-field"><label>Location</label><input class="login-field" placeholder="e.g. Building D" style="margin-bottom:8px"></div>'
+      + '<div class="flex gap-2"><button class="btn btn-primary" onclick="closePopup()">Create Machine</button><button class="btn btn-secondary" onclick="closePopup()">Cancel</button></div>';
+  }
+  document.getElementById('popup').innerHTML = html;
+  document.getElementById('overlay').classList.add('show');
+}
+
+function closePopup() {
+  document.getElementById('overlay').classList.remove('show');
+}
+
+// ===== FILTERS =====
+function filterMachines(query) {
+  var q = query.toLowerCase();
+  document.querySelectorAll('#machines-full-grid .m-card').forEach(function(card) {
+    var name = card.querySelector('.m-name').textContent.toLowerCase();
+    card.style.display = name.indexOf(q) >= 0 ? '' : 'none';
+  });
+}
+
+function filterMachineStatus(el, status) {
+  document.querySelectorAll('#screen-machines .filter-chip').forEach(function(c){c.classList.remove('active')});
+  el.classList.add('active');
+  document.querySelectorAll('#machines-full-grid .m-card').forEach(function(card) {
+    if(status === 'all') { card.style.display = ''; return; }
+    var dot = card.querySelector('.m-status-dot');
+    var cardStatus = dot.style.background === statusColors[status] ? true : false;
+    card.style.display = cardStatus ? '' : 'none';
+  });
+}
+</script>
+</body>
+</html>
