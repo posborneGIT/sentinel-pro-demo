@@ -1,0 +1,131 @@
+/*
+ * Sentinel Pro demo v2 — shell chrome + screen layout classes not present
+ * in the ported token file. Screens should prefer tokens.css primitives
+ * (.panel/.btn/.chip/.state/.plate/.table.t/.cols/.stack/.row) first and
+ * only add a rule here when nothing in tokens.css covers the shape.
+ */
+
+/* ---------- demo banner ---------- */
+.demo-banner {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 80;
+  background: var(--brand); color: #fff; font-family: var(--cond);
+  font-size: 11px; letter-spacing: .05em; text-transform: uppercase;
+  text-align: center; padding: 5px 10px; border-top: 1px solid var(--accent);
+}
+.demo-banner b { color: var(--accent); }
+
+/* ---------- login ---------- */
+.login-wrap {
+  position: fixed; inset: 0; background: radial-gradient(circle at 30% 20%, #24303f 0%, var(--g0) 65%);
+  display: grid; place-items: center; z-index: 90;
+}
+.login-card { width: min(380px, 92vw); background: var(--g1); border: 1px solid var(--line2); border-radius: 6px; padding: 28px 26px 22px; }
+.login-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+.login-logo .mark { width: 34px; height: 34px; border-radius: 6px; background: var(--accent); display: grid; place-items: center; color: var(--accent-ink); font-family: var(--cond); font-weight: 700; font-size: 15px; }
+.login-title { font-family: var(--cond); font-size: 19px; font-weight: 700; letter-spacing: .02em; }
+.login-sub { color: var(--mute); font-size: 12px; margin: 2px 0 20px; }
+.login-card .field + .field { margin-top: 12px; }
+.login-card .btn.primary { width: 100%; margin-top: 18px; height: 36px; }
+.login-role-pick { display: flex; gap: 6px; margin-top: 6px; }
+.login-role-pick button { flex: 1; }
+.login-foot { margin-top: 16px; font-size: 11px; color: var(--mute); text-align: center; line-height: 1.6; }
+
+/* ---------- shell ---------- */
+.app-shell { display: flex; flex-direction: column; height: 100dvh; }
+.alarm-strip {
+  height: var(--shell-alarm-h); flex: none; background: var(--gs); border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; gap: 14px; padding: 0 14px; overflow-x: auto;
+}
+.alarm-strip .astat { display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 11px; color: var(--ink2); white-space: nowrap; }
+.shell-hdr {
+  height: var(--shell-hdr-h); flex: none; border-bottom: 1px solid var(--line); background: var(--g1);
+  display: flex; align-items: center; gap: 14px; padding: 0 16px;
+}
+.crumb { font-family: var(--cond); font-size: 15px; font-weight: 600; letter-spacing: .01em; }
+.crumb .sep { color: var(--mute); margin: 0 6px; font-weight: 400; }
+.shell-body { flex: 1; display: flex; min-height: 0; }
+.rail {
+  width: var(--shell-rail-w); flex: none; background: var(--gs); border-right: 1px solid var(--line);
+  display: flex; flex-direction: column; align-items: center; padding: 10px 0; gap: 2px; overflow-y: auto;
+}
+.rail .rail-item {
+  width: 46px; height: 46px; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; color: var(--mute); background: none; border: 0; cursor: pointer; font-family: var(--cond); font-size: 9px;
+  text-transform: uppercase; letter-spacing: .04em; text-decoration: none;
+}
+.rail .rail-item svg { width: 19px; height: 19px; stroke: currentColor; fill: none; stroke-width: 1.6; }
+.rail .rail-item:hover { color: var(--ink2); background: var(--g2); }
+.rail .rail-item.on { color: var(--accent); background: var(--g2); }
+.rail .rail-spacer { flex: 1; }
+.main { flex: 1; min-width: 0; overflow-y: auto; padding-bottom: 34px; }
+
+/* ---------- fleet board ---------- */
+.kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.kpi { background: var(--g1); border: 1px solid var(--line); border-radius: 4px; padding: 12px 14px; }
+.kpi .k-label { font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--mute); }
+.kpi .k-val { font-family: var(--cond); font-size: 25px; font-weight: 700; color: var(--val); margin-top: 4px; }
+.kpi .k-sub { font-size: 11px; color: var(--mute); margin-top: 2px; }
+
+.mgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+.mcard {
+  background: var(--g1); border: 1px solid var(--line); border-radius: 4px; padding: 0; cursor: pointer;
+  text-align: left; display: block; width: 100%; color: inherit; font: inherit;
+}
+.mcard:hover { border-color: var(--line2); }
+.mcard .mc-hd { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+.mcard .mc-name { font-family: var(--cond); font-weight: 600; font-size: 14px; flex: 1; }
+.mcard .mc-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+.mcard .mc-row { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--ink2); }
+
+/* ---------- workspace ---------- */
+.wprofile { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.wprofile .wp-icon { width: 40px; height: 40px; border-radius: 6px; background: var(--g2); display: grid; place-items: center; font-family: var(--cond); font-weight: 700; color: var(--ink2); flex: none; }
+.wprofile .wp-name { font-family: var(--cond); font-size: 17px; font-weight: 700; }
+.wprofile .wp-meta { color: var(--mute); font-size: 11.5px; margin-top: 2px; }
+
+/* ---------- diagnostics chat ---------- */
+.chat-shell { display: flex; flex-direction: column; height: min(72vh, 720px); min-height: 420px; }
+.chat-log { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 14px; }
+.msg { max-width: 78%; display: flex; flex-direction: column; gap: 6px; }
+.msg.user { align-self: flex-end; align-items: flex-end; }
+.msg.ai { align-self: flex-start; }
+.msg .bubble { padding: 10px 13px; border-radius: 6px; font-size: 13px; line-height: 1.55; white-space: pre-wrap; }
+.msg.user .bubble { background: var(--g2); border: 1px solid var(--line2); }
+.msg.ai .bubble { background: var(--g0); border: 1px solid var(--line); }
+.msg .msg-meta { font-size: 10.5px; color: var(--mute); font-family: var(--mono); }
+.msg .cites { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+.msg .typing { display: inline-flex; gap: 4px; align-items: center; }
+.msg .typing i { width: 5px; height: 5px; border-radius: 50%; background: var(--mute); animation: tdot 1s infinite ease-in-out; display: inline-block; }
+.msg .typing i:nth-child(2) { animation-delay: .15s; } .msg .typing i:nth-child(3) { animation-delay: .3s; }
+@keyframes tdot { 0%, 60%, 100% { opacity: .25; } 30% { opacity: 1; } }
+.chat-input-row { border-top: 1px solid var(--line); padding: 10px 12px; display: flex; gap: 8px; align-items: flex-end; }
+.chat-input-row .textarea { flex: 1; }
+.session-list { max-height: 640px; overflow-y: auto; }
+.session-item { display: block; width: 100%; text-align: left; padding: 9px 12px; border: 0; background: none; color: inherit; font: inherit; border-bottom: 1px solid var(--line); cursor: pointer; }
+.session-item:hover, .session-item.on { background: var(--g2); }
+.session-item .si-title { font-size: 12.5px; color: var(--ink); }
+.session-item .si-meta { font-size: 10.5px; color: var(--mute); font-family: var(--mono); margin-top: 2px; }
+
+/* ---------- OPC / live data ---------- */
+.opc-trend-wrap { position: relative; height: 150px; }
+.opc-trend-wrap canvas { width: 100%; height: 100%; display: block; }
+.tagrow-val { font-family: var(--mono); font-size: 13px; color: var(--val); }
+
+/* ---------- rings / coverage ---------- */
+.ring-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 14px; text-align: center; }
+.ring-wrap svg circle.bg { stroke: var(--g2); }
+.ring-wrap svg circle.fg { stroke: var(--info); transition: stroke-dashoffset .4s; }
+.ring-wrap .ring-label { font-family: var(--cond); font-size: 10px; letter-spacing: .04em; text-transform: uppercase; color: var(--mute); margin-top: 4px; }
+.ring-wrap .ring-val { font-family: var(--mono); font-size: 15px; fill: var(--val); }
+
+/* ---------- twin ---------- */
+.twin-canvas-wrap { position: relative; height: 280px; background: var(--g0); border-radius: 3px; overflow: hidden; }
+
+/* ---------- misc grids ---------- */
+.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.hscroll { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; }
+
+@media (max-width: 900px) {
+  .rail { display: none; }
+  .page { padding: 12px; }
+}
