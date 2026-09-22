@@ -14,6 +14,16 @@
     var current = null; // active session object, or null for a fresh chat
     var freshLog = []; // {role, text, citations?, insufficientNote?, insight?}
 
+    // Realtime Data / Trending — the same OPC feed the Live Data tab shows, surfaced
+    // here too so the chat's "Live OPC context: ..." lines have a visible source to
+    // point at instead of only being asserted in text.
+    var rtTags = DATA.opcTags[machine.id];
+    var rtLive = rtTags ? rtTags.map(function (t) { return Object.assign({}, t, { value: t.base }); }) : null;
+    var rtTrendTag = rtLive ? (rtLive.filter(function (t) { return t.trendingHigh; })[0] || rtLive[0]) : null;
+    var rtHistory = [];
+    var rtTickCount = 0;
+    var rtIntervalId = null;
+
     mount.innerHTML =
       '<div class="cols cols-3">' +
       '<div class="panel"><div class="ph">Sessions<span class="grow"></span><span class="num">' + sessions.length + '</span></div>' +
@@ -28,6 +38,7 @@
       '<textarea class="textarea" id="dg-input" rows="2" placeholder="Ask about ' + UI.escape(machine.name) + '…"></textarea>' +
       '<button class="btn primary" id="dg-send">Send</button>' +
       '</div></div></div>' +
+      '<div class="stack">' +
       '<div class="panel"><div class="ph">Context</div><div class="pb stack">' +
       '<div class="field"><label>Machine</label><div class="val">' + UI.escape(machine.name) + '</div></div>' +
       '<div class="field"><label>Controller</label><div class="val" style="font-size:11.5px">' + UI.escape(machine.controller) + '</div></div>' +
@@ -37,6 +48,16 @@
       }).join('') + '</select></div>' +
       '<div class="note info">Retrieval fuses dense (ChromaDB) and lexical (BM25) search per machine — answers are grounded only in ' + UI.escape(machine.name) + '’s indexed documents.</div>' +
       '</div></div>' +
+      '<div class="panel"><div class="ph">Realtime Data<span class="grow"></span><span class="chip" id="rt-feed-chip"></span></div>' +
+      '<div class="pb stack">' +
+      (rtLive
+        ? '<table class="t" id="rt-tag-table"><tbody id="rt-tag-body"></tbody></table>' +
+          '<div class="row" style="justify-content:space-between"><span class="lbl">Trending — ' + UI.escape(rtTrendTag ? rtTrendTag.label : '') + '</span></div>' +
+          '<div class="opc-trend-wrap" style="height:90px"><canvas id="rt-trend-canvas"></canvas></div>' +
+          '<a class="link" style="font-size:11px" href="#/fleet/' + machine.id + '/live">Open full Live Data monitor →</a>'
+        : '<div class="empty" style="padding:14px 4px"><div class="k">No live OPC feed</div>No OPC bridge agent is bound to ' + UI.escape(machine.name) + ' in this demo.</div>') +
+      '</div></div>' +
+      '</div>' +
       '</div>';
 
     function renderSessionList() {
@@ -64,6 +85,69 @@
       }
       html += '<div class="msg-meta">' + (m.role === 'user' ? 'You' : provider.name) + '</div></div>';
       return html;
+    }
+
+    function rtRenderChip() {
+      var chip = document.getElementById('rt-feed-chip');
+      if (!chip) return;
+      if (rtLive) { chip.className = 'chip ok'; chip.innerHTML = UI.dot('ok') + 'LIVE'; }
+      else { chip.className = 'chip'; chip.innerHTML = UI.dot() + 'NO FEED'; }
+    }
+    function rtRenderTags() {
+      var tbody = document.getElementById('rt-tag-body');
+      if (!tbody || !rtLive) return;
+      tbody.innerHTML = rtLive.map(function (t) {
+        var alarmed = t.alarmHigh != null && t.value >= t.alarmHigh;
+        return '<tr class="row' + (alarmed ? ' sev-fault' : '') + '">' +
+          '<td style="font-size:11.5px">' + UI.escape(t.label) + '</td>' +
+          '<td class="n tagrow-val">' + t.value.toFixed(1) + '<span class="unit">' + UI.escape(t.unit) + '</span></td>' +
+          '<td>' + UI.state(alarmed ? 'Alarm' : 'Normal', alarmed ? 'fault' : '') + '</td>' +
+          '</tr>';
+      }).join('');
+    }
+    function rtDrawTrend() {
+      var canvas = document.getElementById('rt-trend-canvas');
+      if (!canvas || !rtTrendTag) return;
+      var w = canvas.clientWidth || 300, h = canvas.clientHeight || 90;
+      canvas.width = w; canvas.height = h;
+      var g = canvas.getContext('2d');
+      g.clearRect(0, 0, w, h);
+      if (rtHistory.length < 2) return;
+      var lo = rtTrendTag.band[0], hi = rtTrendTag.band[1];
+      function y(v) { return h - ((v - lo) / (hi - lo)) * h; }
+      if (rtTrendTag.alarmHigh != null) {
+        g.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--line2').trim() || '#3b434e';
+        g.lineWidth = 1; g.setLineDash([4, 3]);
+        g.beginPath(); g.moveTo(0, y(rtTrendTag.alarmHigh)); g.lineTo(w, y(rtTrendTag.alarmHigh)); g.stroke();
+        g.setLineDash([]);
+      }
+      g.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--info').trim() || '#4c9be8';
+      g.lineWidth = 1.6;
+      g.beginPath();
+      rtHistory.forEach(function (p, i) {
+        var x = (i / (rtHistory.length - 1)) * w;
+        if (i === 0) g.moveTo(x, y(p.v)); else g.lineTo(x, y(p.v));
+      });
+      g.stroke();
+    }
+    function rtTick() {
+      rtTickCount += 1;
+      rtLive.forEach(function (t) {
+        var drift = (Math.random() - 0.5) * 2 * t.noise;
+        if (t.trendingHigh) drift += t.noise * 0.35;
+        var next = t.value + drift;
+        t.value = Math.max(t.band[0], Math.min(t.band[1] * 1.02, next));
+      });
+      var tt = rtLive.filter(function (t) { return t.tag === rtTrendTag.tag; })[0];
+      rtHistory.push({ t: rtTickCount, v: tt.value });
+      if (rtHistory.length > 60) rtHistory.shift();
+      rtRenderTags();
+      rtDrawTrend();
+    }
+    function rtStart() {
+      if (!rtLive) return;
+      rtRenderChip(); rtTick();
+      rtIntervalId = setInterval(rtTick, 1200);
     }
 
     function logEl() { return document.getElementById('dg-log'); }
@@ -200,6 +284,9 @@
     if (!toOpen && sessions.length) toOpen = sessions[0];
     if (toOpen) playSession(toOpen); else startFresh();
 
-    return function cleanup() { clearTimers(); };
+    rtRenderChip();
+    rtStart();
+
+    return function cleanup() { clearTimers(); if (rtIntervalId) clearInterval(rtIntervalId); };
   };
 })();
