@@ -158,6 +158,11 @@
         var recent = window.DATA.machines.slice().sort(function (a, b) { return a.lastActivity < b.lastActivity ? 1 : -1; })[0];
         navigate('#/fleet/' + recent.id + '/diagnose');
         return;
+      } else if (route.screen === 'twin') {
+        // Top-level "Twin" rail item: only XP5 has a digital twin today — jump straight into it.
+        var twinMachine = window.DATA.machines.filter(function (m) { return m.hasTwin; })[0];
+        if (twinMachine) { navigate('#/fleet/' + twinMachine.id + '/twin'); return; }
+        page.innerHTML = '<div class="empty"><div class="k">No digital twin configured</div>No machine in this fleet currently has a digital twin binding.</div>';
       } else if (window.SCREENS[route.screen]) {
         var cleanup = window.SCREENS[route.screen](page, route, ctx());
         if (typeof cleanup === 'function') STATE.cleanup = cleanup;

@@ -68,6 +68,12 @@
 
     function logEl() { return document.getElementById('dg-log'); }
     function scrollLog() { var el = logEl(); if (el) el.scrollTop = el.scrollHeight; }
+    function setInputEnabled(enabled) {
+      var input = document.getElementById('dg-input');
+      var send = document.getElementById('dg-send');
+      if (input) { input.disabled = !enabled; input.placeholder = enabled ? ('Ask about ' + machine.name + '…') : 'Playback in progress…'; }
+      if (send) send.disabled = !enabled;
+    }
 
     function appendTyping() {
       var el = logEl(); if (!el) return null;
@@ -84,9 +90,10 @@
       current = s;
       document.getElementById('dg-sessions').innerHTML = renderSessionList();
       var el = logEl(); el.innerHTML = '';
+      setInputEnabled(false); // held until scripted playback finishes, so a live send can never interleave with it
       var i = 0;
       function step() {
-        if (i >= s.messages.length) return;
+        if (i >= s.messages.length) { setInputEnabled(true); return; }
         var m = s.messages[i]; i += 1;
         if (m.role === 'user') {
           el.insertAdjacentHTML('beforeend', bubbleHtml(m));
@@ -111,6 +118,7 @@
       freshLog = [];
       document.getElementById('dg-sessions').innerHTML = renderSessionList();
       logEl().innerHTML = '<div class="empty"><div class="k">New session</div>Ask a question about ' + UI.escape(machine.name) + ' — answers cite the machine’s indexed documents, or say so honestly when nothing matches.</div>';
+      setInputEnabled(true);
     }
 
     var KEYWORD_STOP = { 'the': 1, 'is': 1, 'a': 1, 'on': 1, 'for': 1, 'and': 1, 'of': 1, 'to': 1, 'what': 1, 'why': 1, 'how': 1, 'are': 1, 'my': 1, 'i': 1, 'it': 1 };
@@ -140,6 +148,7 @@
       logEl().insertAdjacentHTML('beforeend', bubbleHtml(userMsg));
       input.value = '';
       scrollLog();
+      setInputEnabled(false); // held until this reply lands, so a second send can't interleave with it
       appendTyping();
       later(function () {
         removeTyping();
@@ -148,7 +157,7 @@
         if (doc) {
           reply = {
             role: 'ai',
-            text: 'Based on ' + machine.name + '’s indexed documentation, ' + doc.title.toLowerCase() + ' is the most relevant source for that — it’s a ' + doc.category.toLowerCase() + ' record with ' + doc.chunks + ' indexed chunks. Ask a more specific follow-up (a fault code, tag name, or component) for a grounded, cited answer.',
+            text: 'Based on ' + machine.name + '’s indexed documentation, “' + doc.title + '” is the most relevant source for that — it’s a ' + doc.category.toLowerCase() + ' record with ' + doc.chunks + ' indexed chunks. Ask a more specific follow-up (a fault code, tag name, or component) for a grounded, cited answer.',
             citations: [{ title: doc.filename, date: UI.fmtDate(doc.uploadedAt) }]
           };
         } else {
@@ -160,6 +169,7 @@
         }
         logEl().insertAdjacentHTML('beforeend', bubbleHtml(reply));
         scrollLog();
+        setInputEnabled(true);
       }, 900);
     }
 
